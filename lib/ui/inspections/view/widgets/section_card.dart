@@ -26,17 +26,33 @@ class SectionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // ✅ Title is flexible + ellipsis
               Expanded(
                 child: Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+
+              // ✅ Safe spacing before trailing
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                // ✅ Prevent trailing from forcing overflow
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: trailing!,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 10),

@@ -1,6 +1,9 @@
 import 'package:electro_farm/app_shell.dart';
+import 'package:electro_farm/providers/wether_provider.dart';
 import 'package:electro_farm/ui/flow/app_flow.dart';
+import 'package:electro_farm/ui/inspections/providers/frames_provider.dart';
 import 'package:electro_farm/ui/inspections/providers/inpection_run_provider.dart';
+import 'package:electro_farm/ui/inspections/providers/report_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +35,9 @@ class AgriBotApp extends StatelessWidget {
           create: (_) => TelemetryProvider(socketService: socket),
         ),
         ChangeNotifierProvider(create: (_) => RunsProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
+        ChangeNotifierProvider(create: (_) => FramesProvider()),
+        ChangeNotifierProvider(create: (_) => WeatherProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

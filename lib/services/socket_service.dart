@@ -103,6 +103,21 @@ class SocketService {
     _setStatus(SocketStatus.disconnected);
   }
 
+  void sendCmdVel({
+    required String robotId,
+    required double vx,
+    required double wz,
+  }) {
+    if (_status != SocketStatus.connected) return;
+
+    _socket.emit("cmd_vel", {
+      "robot_id": robotId,
+      "ts": DateTime.now().millisecondsSinceEpoch / 1000.0,
+      "mode": "manual",
+      "cmd_vel": {"vx": vx, "vy": 0.0, "wz": wz},
+    });
+  }
+
   void dispose() {
     disconnect();
     _telemetryController.close();

@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:electro_farm/config/app_config.dart';
 
 class DioClient {
   static final DioClient _instance = DioClient._internal();
   late Dio _dio;
-  final String baseURL = "http://127.0.0.1:5000";
+  final String baseURL = AppConfig.backendUrl;
 
   factory DioClient() {
     return _instance;

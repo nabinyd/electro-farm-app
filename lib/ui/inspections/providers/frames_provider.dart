@@ -3,25 +3,43 @@ import 'package:electro_farm/services/inspection_service.dart';
 import 'package:flutter/foundation.dart';
 
 class FramesProvider extends ChangeNotifier {
-  FramesProvider({required this.api, required this.runId});
-  final InspectionApi api;
-  final String runId;
+  final InspectionApi _api = InspectionApi();
 
-  bool loading = false;
-  String? error;
-  List<InspectionFrame> frames = const [];
+  bool _loading = false;
+  String? _error;
+  List<InspectionFrame> _frames = const [];
+  
+  bool get loading => _loading;
+  String? get error => _error;
+  List<InspectionFrame> get frames => _frames;
 
-  Future<void> load() async {
-    loading = true;
-    error = null;
+  bool get hasError => _error != null;
+  bool get isEmpty => _frames.isEmpty;
+  int get count => _frames.length;
+
+  // -----------------
+  // Actions
+  // -----------------
+  Future<void> load(String runId) async {
+    _loading = true;
+    _error = null;
     notifyListeners();
+
     try {
-      frames = await api.getFrames(runId);
+      _frames = await _api.getFrames(runId);
     } catch (e) {
-      error = e.toString();
+      _error = e.toString();
+      _frames = const [];
     } finally {
-      loading = false;
+      _loading = false;
       notifyListeners();
     }
+  }
+
+  void clear() {
+    _frames = const [];
+    _error = null;
+    _loading = false;
+    notifyListeners();
   }
 }

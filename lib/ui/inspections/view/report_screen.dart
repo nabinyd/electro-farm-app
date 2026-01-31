@@ -1,41 +1,63 @@
-import 'package:electro_farm/services/inspection_service.dart';
+import 'package:electro_farm/custom_component/custom_appbar.dart';
+import 'package:electro_farm/custom_component/custom_button.dart';
+import 'package:electro_farm/models/inspection_models.dart';
 import 'package:electro_farm/ui/inspections/providers/report_provider.dart';
+import 'package:electro_farm/ui/inspections/view/frame_screen.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/badges.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/section_card.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/stat_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class ReportScreen extends StatelessWidget {
+class ReportScreen extends StatefulWidget {
   final String runId;
   const ReportScreen({super.key, required this.runId});
 
   @override
+  State<ReportScreen> createState() => _ReportScreenState();
+}
+
+class _ReportScreenState extends State<ReportScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ trigger load once when this screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportProvider>().load(widget.runId);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ReportScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // ✅ if runId changes, refetch
+    if (oldWidget.runId != widget.runId) {
+      context.read<ReportProvider>().load(widget.runId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ReportProvider(api: InspectionApi(), runId: runId)..load(),
-      child: const _ReportView(),
-    );
+    return _ReportView(runId: widget.runId);
   }
 }
 
 class _ReportView extends StatelessWidget {
-  const _ReportView();
+  final String runId;
+  const _ReportView({required this.runId});
 
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ReportProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Run Report",
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
+      appBar: ElectrofarmAppBar(
+        title: "Inspection Report",
         actions: [
           IconButton(
-            onPressed: () =>
-                context.read<ReportProvider>().load(pollIfProcessing: true),
+            onPressed: () => context.read<ReportProvider>().load(runId),
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -49,6 +71,7 @@ class _ReportView extends StatelessWidget {
                 child: Text(
                   p.error!,
                   style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
               )
             : p.report == null
@@ -60,7 +83,7 @@ class _ReportView extends StatelessWidget {
 }
 
 class _ReportBody extends StatelessWidget {
-  final report;
+  final RunReport report;
   const _ReportBody({required this.report});
 
   @override
@@ -87,7 +110,7 @@ class _ReportBody extends StatelessWidget {
           child: Column(
             children: [
               _kv("Robot", r.robotId),
-              _kv("Field", r.fieldId),
+              // _kv("Field", r.fieldId),
               const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
@@ -228,6 +251,23 @@ class _ReportBody extends StatelessWidget {
             ],
           ),
         ),
+
+        SectionCard(
+          title: "Frames",
+          child: SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              text: "View all frames",
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FramesScreen(runId: report.runId),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -238,9 +278,25 @@ class _ReportBody extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(k, style: const TextStyle(color: Colors.black54)),
+            flex: 4,
+            child: Text(
+              k,
+              style: const TextStyle(color: Colors.black54),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          Text(v, style: const TextStyle(fontWeight: FontWeight.w900)),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 6,
+            child: Text(
+              v,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            ),
+          ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:electro_farm/custom_component/constant.dart';
 import 'package:flutter/material.dart';
 
 class StatusBadge extends StatelessWidget {
@@ -7,7 +8,7 @@ class StatusBadge extends StatelessWidget {
   Color _bg(BuildContext c) {
     switch (status) {
       case "done":
-        return Colors.green.withOpacity(.12);
+        return AppColors.success;
       case "failed":
         return Colors.red.withOpacity(.12);
       case "processing":
@@ -20,7 +21,7 @@ class StatusBadge extends StatelessWidget {
   Color _fg(BuildContext c) {
     switch (status) {
       case "done":
-        return Colors.green.shade800;
+        return AppColors.onPrimary;
       case "failed":
         return Colors.red.shade800;
       case "processing":

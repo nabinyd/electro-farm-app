@@ -1,145 +1,224 @@
-import 'package:electro_farm/config/app_config.dart';
-import 'package:electro_farm/services/inspection_service.dart';
+import 'package:electro_farm/custom_component/custom_appbar.dart';
+import 'package:electro_farm/models/inspection_models.dart';
 import 'package:electro_farm/ui/inspections/providers/frames_provider.dart';
+import 'package:electro_farm/ui/inspections/view/frame_detail_screen.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/badges.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/section_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class FramesScreen extends StatelessWidget {
+class FramesScreen extends StatefulWidget {
   final String runId;
   const FramesScreen({super.key, required this.runId});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => FramesProvider(api: InspectionApi(), runId: runId)..load(),
-      child: _FramesView(runId: runId),
-    );
-  }
+  State<FramesScreen> createState() => _FramesScreenState();
 }
 
-class _FramesView extends StatelessWidget {
-  final String runId;
-  const _FramesView({required this.runId});
+class _FramesScreenState extends State<FramesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<FramesProvider>().load(widget.runId);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant FramesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.runId != widget.runId) {
+      context.read<FramesProvider>().load(widget.runId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = context.watch<FramesProvider>();
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Frames",
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
+      appBar: ElectrofarmAppBar(
+        title: "Frames",
         actions: [
           IconButton(
-            onPressed: () => context.read<FramesProvider>().load(),
+            tooltip: "Refresh",
+            onPressed: () => context.read<FramesProvider>().load(widget.runId),
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(14),
-        child: p.loading
-            ? const Center(child: CircularProgressIndicator())
-            : p.error != null
-            ? Center(
-                child: Text(
-                  p.error!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              )
-            : p.frames.isEmpty
-            ? const Center(
-                child: Text(
-                  "No frames yet",
-                  style: TextStyle(color: Colors.black54),
-                ),
-              )
-            : ListView.builder(
-                itemCount: p.frames.length,
-                itemBuilder: (_, i) {
-                  final f = p.frames[i];
-                  final health = f.findings?.plantHealth ?? "unknown";
-                  final issues = f.findings?.issues.length ?? 0;
+      body: const _FramesBody(),
+    );
+  }
+}
 
-                  // If you expose images via /uploads/<filename>
-                  final imageUrl = _toPublicImageUrl(f.imagePath);
+class _FramesBody extends StatelessWidget {
+  const _FramesBody();
 
-                  return SectionCard(
-                    title: "Frame • ${f.frameId.substring(0, 8)}",
-                    trailing: StatusBadge(status: f.status),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (imageUrl != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: Image.network(imageUrl, fit: BoxFit.cover),
-                            ),
-                          )
-                        else
-                          const Text(
-                            "Image preview not configured.\nExpose uploads route to view images.",
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                "Health: $health",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              "Issues: $issues",
-                              style: const TextStyle(color: Colors.black54),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              "/inspection/frame/$runId/${f.frameId}",
-                            ),
-                            icon: const Icon(Icons.open_in_new),
-                            label: const Text("Open Details"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final loading = context.select((FramesProvider p) => p.loading);
+    final error = context.select((FramesProvider p) => p.error);
+    final frames = context.select((FramesProvider p) => p.frames);
+
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error != null) {
+      return _ErrorState(message: error);
+    }
+
+    if (frames.isEmpty) {
+      return const _EmptyState();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(14),
+      itemCount: frames.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final f = frames[i];
+        return _FrameCard(frame: f, index: i);
+      },
+    );
+  }
+}
+
+class _FrameCard extends StatelessWidget {
+  final InspectionFrame frame;
+  final int index;
+  const _FrameCard({required this.frame, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final health = frame.findings?.plantHealth ?? "unknown";
+    final issuesCount = frame.findings?.issues.length ?? 0;
+
+    return SectionCard(
+      title: "Frame #${index + 1} • ${frame.frameId.substring(0, 8)}",
+      trailing: StatusBadge(status: frame.status),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _MiniChip(icon: Icons.eco, label: "Health: $health"),
+              const SizedBox(width: 8),
+              _MiniChip(icon: Icons.bug_report, label: "Issues: $issuesCount"),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FrameDetailScreen(frameId: frame.frameId),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text("Open details"),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  String? _toPublicImageUrl(String imagePath) {
-    // backend save_path: uploads/<uuid>.jpg
-    // You need a Flask route: /uploads/<filename> that serves from UPLOADS_DIR.
-    final idx = imagePath.replaceAll("\\", "/").lastIndexOf("/uploads/");
-    if (idx != -1) {
-      final file = imagePath.substring(idx + "/uploads/".length);
-      return "${AppConfig.backendUrl}/uploads/$file";
-    }
+class _MiniChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _MiniChip({required this.icon, required this.label});
 
-    // If your imagePath is already like "uploads/xxx.jpg"
-    if (imagePath.startsWith("uploads/")) {
-      final file = imagePath.substring("uploads/".length);
-      return "${AppConfig.backendUrl}/uploads/$file";
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.black54),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
 
-    return null;
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.photo_library_outlined, size: 40, color: Colors.black45),
+            SizedBox(height: 10),
+            Text(
+              "No frames yet",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            SizedBox(height: 6),
+            Text(
+              "Frames will appear as the inspection processes images.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  const _ErrorState({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
+            const SizedBox(height: 10),
+            const Text(
+              "Failed to load frames",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: () {
+                // We need runId here; easiest: pop and refresh from previous screen,
+                // OR wrap this widget to pass runId. If you want, I’ll adjust.
+                Navigator.of(context).maybePop();
+              },
+              icon: const Icon(Icons.arrow_back),
+              label: const Text("Go back"),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

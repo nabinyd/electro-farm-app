@@ -177,12 +177,13 @@ class RunReport {
   final String robotId;
   final String fieldId;
   final String status;
+
   final int totalFrames;
   final int doneFrames;
   final int failedFrames;
 
   final Map<String, dynamic>? reportJson; // aggregated
-  final Map<String, dynamic>? reportText; // llm structured json
+  final Map<String, dynamic>? reportText;
 
   RunReport({
     required this.runId,
@@ -197,29 +198,58 @@ class RunReport {
   });
 
   factory RunReport.fromJson(Map<String, dynamic> json) {
+    final reportJson = _map(json["report_json"]);
+    final reportText = _map(json["report_text"]);
+
+    // Fallbacks if backend doesn't send robot_id/status/total_frames
+    String robotId = (json["robot_id"] ?? "").toString();
+    String status = (json["status"] ?? "processing").toString();
+    int totalFrames = _i(json["total_frames"]);
+
+    // try infer from report_json.frames_preview[0].meta
+    final frames = (reportJson?["frames_preview"] is List)
+        ? (reportJson!["frames_preview"] as List)
+        : const [];
+
+    if (frames.isNotEmpty && frames.first is Map) {
+      final first = (frames.first as Map).cast<String, dynamic>();
+      final meta = _map(first["meta"]);
+      robotId = robotId.isNotEmpty
+          ? robotId
+          : (meta?["robot_id"] ?? "").toString();
+
+      // optionally infer status if missing
+      status = status.isNotEmpty
+          ? status
+          : (first["status"] ?? "processing").toString();
+    }
+
+    // if totalFrames not provided, infer from frames_preview length (or keep 0)
+    if (totalFrames <= 0) totalFrames = frames.length;
+
     return RunReport(
-      runId: (json["run_id"] ?? "").toString(),
-      robotId: (json["robot_id"] ?? "").toString(),
+      runId: (json["run_id"] ?? json["runId"] ?? "").toString(),
+      robotId: robotId,
       fieldId: (json["field_id"] ?? "").toString(),
-      status: (json["status"] ?? "processing").toString(),
-      totalFrames: _i(json["total_frames"]),
+      status: status,
+      totalFrames: totalFrames,
       doneFrames: _i(json["done_frames"]),
       failedFrames: _i(json["failed_frames"]),
-      reportJson: _map(json["report_json"]),
-      reportText: _map(json["report_text"]),
+      reportJson: reportJson,
+      reportText: reportText,
     );
   }
 
   double get progress =>
       totalFrames <= 0 ? 0 : (doneFrames / totalFrames).clamp(0.0, 1.0);
 
-  Map<String, dynamic> get stats => (reportJson?["stats"] is Map)
-      ? (reportJson!["stats"] as Map).cast<String, dynamic>()
-      : {};
+  Map<String, dynamic> get stats {
+    final s = reportJson?["stats"];
+    return (s is Map) ? s.cast<String, dynamic>() : <String, dynamic>{};
+  }
 
   List<Map<String, dynamic>> get topIssues {
-    final s = stats;
-    final list = s["top_issues"];
+    final list = stats["top_issues"];
     if (list is List) {
       return list
           .whereType<Map>()

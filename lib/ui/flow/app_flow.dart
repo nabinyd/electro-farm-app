@@ -7,7 +7,6 @@ import '../home_screen/view/home_screen.dart';
 import '../task_selection/view/confirm_task_screen.dart';
 import 'screens/working_screen.dart';
 import '../home_screen/view/manual_control_screen.dart';
-import '../report_screen/view/report_screen.dart';
 import '../home_screen/view/dashboard_screen.dart';
 
 enum FarmTask { seed, spray, weed, inspect }
@@ -81,21 +80,7 @@ class _AppFlowState extends State<AppFlow> {
         initialRowDone: 0,
         onOpenManual: () => push(const ManualControlScreen()),
         onStop: () => Navigator.of(context).pop(), // back to previous
-        onCompleted: () {
-          push(
-            ReportScreen(
-              task: task,
-              totalRows: 12,
-              timeTakenMin: 42,
-              batteryUsedPercent: 18,
-              laborSavedHours: 2,
-              onNewTask: () {
-                Navigator.of(context).popUntil((r) => r.isFirst);
-                startNewTaskFlow();
-              },
-            ),
-          );
-        },
+        onCompleted: () {},
       ),
     );
   }
@@ -105,19 +90,6 @@ class _AppFlowState extends State<AppFlow> {
     return HomeScreen(
       onStartWork: startNewTaskFlow,
       onManualControl: () => push(const ManualControlScreen()),
-      onReports: () => push(
-        ReportScreen(
-          task: lastTask ?? FarmTask.inspect,
-          totalRows: 12,
-          timeTakenMin: 42,
-          batteryUsedPercent: 18,
-          laborSavedHours: 2,
-          onNewTask: () {
-            Navigator.of(context).popUntil((r) => r.isFirst);
-            startNewTaskFlow();
-          },
-        ),
-      ),
       onOpenTechDashboard: () => push(const DashboardScreen()),
     );
   }

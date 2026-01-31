@@ -4,9 +4,7 @@ import 'package:electro_farm/services/inspection_service.dart';
 import 'package:flutter/foundation.dart';
 
 class ReportProvider extends ChangeNotifier {
-  ReportProvider({required this.api, required this.runId});
-  final InspectionApi api;
-  final String runId;
+  final InspectionApi api = InspectionApi();
 
   RunReport? report;
   bool loading = false;
@@ -14,13 +12,13 @@ class ReportProvider extends ChangeNotifier {
 
   Timer? _poll;
 
-  Future<void> load({bool pollIfProcessing = true}) async {
+  Future<void> load(String runId, {bool pollIfProcessing = true}) async {
     loading = true;
     error = null;
     notifyListeners();
     try {
       report = await api.getReport(runId);
-      if (pollIfProcessing) _setupPollingIfNeeded();
+      if (pollIfProcessing) _setupPollingIfNeeded(runId);
     } catch (e) {
       error = e.toString();
     } finally {
@@ -29,7 +27,7 @@ class ReportProvider extends ChangeNotifier {
     }
   }
 
-  void _setupPollingIfNeeded() {
+  void _setupPollingIfNeeded(String runId) {
     _poll?.cancel();
     final status = report?.status ?? "processing";
     if (status == "done" || status == "failed") return;

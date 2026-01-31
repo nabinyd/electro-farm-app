@@ -66,7 +66,13 @@ class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
               },
               tooltip: 'Back',
             )
-          : Image.asset('assets/images/electrofarm_icon.png', height: 24),
+          : CircleAvatar(
+              child: Image.asset(
+                'assets/images/electrofarm_icon.png',
+                height: 24,
+                width: 24,
+              ),
+            ),
       title: title != null
           ? Text(
               title!,

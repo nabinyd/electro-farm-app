@@ -1,5 +1,5 @@
 import 'package:electro_farm/config/app_config.dart';
-import 'package:electro_farm/services/inspection_service.dart';
+import 'package:electro_farm/custom_component/custom_appbar.dart';
 import 'package:electro_farm/ui/inspections/providers/frames_provider.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/badges.dart';
 import 'package:electro_farm/ui/inspections/view/widgets/section_card.dart';
@@ -7,57 +7,48 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FrameDetailScreen extends StatelessWidget {
-  final String runId;
   final String frameId;
-  const FrameDetailScreen({
-    super.key,
-    required this.runId,
-    required this.frameId,
-  });
+  const FrameDetailScreen({super.key, required this.frameId});
 
   @override
   Widget build(BuildContext context) {
-    // reuse FramesProvider and pick one frame
-    return ChangeNotifierProvider(
-      create: (_) => FramesProvider(api: InspectionApi(), runId: runId)..load(),
-      child: _View(frameId: frameId),
-    );
-  }
-}
+    final loading = context.select((FramesProvider p) => p.loading);
+    final error = context.select((FramesProvider p) => p.error);
+    final frames = context.select((FramesProvider p) => p.frames);
 
-class _View extends StatelessWidget {
-  final String frameId;
-  const _View({required this.frameId});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.watch<FramesProvider>();
-    if (p.loading) {
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    if (p.error != null) {
+    if (error != null) {
       return Scaffold(
+        appBar: ElectrofarmAppBar(
+          title: "Frame Detail",
+          showBackButton: true,
+          showLogoutButton: false,
+        ),
         body: Center(
-          child: Text(p.error!, style: const TextStyle(color: Colors.red)),
+          child: Text(error, style: const TextStyle(color: Colors.red)),
         ),
       );
     }
+    if (frames.isEmpty) {
+      return const Scaffold(body: Center(child: Text("No frames loaded.")));
+    }
 
-    final frame = p.frames.firstWhere(
+    final frame = frames.firstWhere(
       (e) => e.frameId == frameId,
-      orElse: () => p.frames.first,
+      orElse: () => frames.first,
     );
 
-    final img = _toPublicImageUrl(frame.imagePath);
     final issues = frame.findings?.issues ?? const [];
     final health = frame.findings?.plantHealth ?? "unknown";
+    final img = _toPublicImageUrl(frame.imagePath);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Frame Details",
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
+      appBar: ElectrofarmAppBar(
+        title: "Frame Detail",
+        showBackButton: true,
+        showLogoutButton: false,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -65,95 +56,119 @@ class _View extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(14),
-        child: ListView(
-          children: [
-            SectionCard(
-              title: "Preview",
-              child: img == null
-                  ? const Text(
-                      "Image preview not configured.",
-                      style: TextStyle(color: Colors.black54),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Image.network(img, fit: BoxFit.cover),
-                      ),
-                    ),
-            ),
-            SectionCard(
-              title: "Health",
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      health,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
+        children: [
+          SectionCard(
+            title: "Preview",
+            child: img == null
+                ? const Text(
+                    "Image preview not configured.",
+                    style: TextStyle(color: Colors.black54),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        img,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(18),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 200,
+                          color: Colors.black12,
+                          alignment: Alignment.center,
+                          child: const Text("Image failed to load"),
+                        ),
                       ),
                     ),
                   ),
-                  Text(
-                    "Issues: ${issues.length}",
-                    style: const TextStyle(color: Colors.black54),
+          ),
+          SectionCard(
+            title: "Health",
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    health,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
                   ),
-                ],
-              ),
+                ),
+                Text(
+                  "Issues: ${issues.length}",
+                  style: const TextStyle(color: Colors.black54),
+                ),
+              ],
             ),
-            SectionCard(
-              title: "Issues",
-              child: issues.isEmpty
-                  ? const Text(
-                      "No issues detected.",
-                      style: TextStyle(color: Colors.black54),
-                    )
-                  : Column(
-                      children: issues.map((iss) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      iss.type,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                      ),
+          ),
+          SectionCard(
+            title: "Issues",
+            child: issues.isEmpty
+                ? const Text(
+                    "No issues detected.",
+                    style: TextStyle(color: Colors.black54),
+                  )
+                : Column(
+                    children: issues.map<Widget>((iss) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.black.withOpacity(0.06),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    iss.type,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
                                     ),
-                                    const SizedBox(height: 2),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Confidence: ${(iss.confidence * 100).toStringAsFixed(1)}%",
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  if (iss.bbox != null)
                                     Text(
-                                      "Confidence: ${iss.confidence.toStringAsFixed(2)}",
+                                      "BBox: ${iss.bbox!.map((e) => e.toStringAsFixed(0)).join(", ")}",
                                       style: const TextStyle(
                                         color: Colors.black54,
                                       ),
                                     ),
-                                    if (iss.bbox != null)
-                                      Text(
-                                        "BBox: ${iss.bbox!.map((e) => e.toStringAsFixed(0)).join(", ")}",
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                ],
                               ),
-                              SeverityChip(severity: iss.severity),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-            ),
-          ],
-        ),
+                            ),
+                            SeverityChip(severity: iss.severity),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+        ],
       ),
     );
   }

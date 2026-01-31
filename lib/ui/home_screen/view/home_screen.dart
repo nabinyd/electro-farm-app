@@ -4,6 +4,7 @@ import 'package:electro_farm/core/utils/toaast_helper.dart';
 import 'package:electro_farm/custom_component/constant.dart';
 import 'package:electro_farm/custom_component/custom_appbar.dart';
 import 'package:electro_farm/custom_component/custom_button.dart';
+import 'package:electro_farm/ui/weather/views/weather_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,14 +15,12 @@ import 'package:electro_farm/ui/widgets/premium_widget.dart';
 class HomeScreen extends StatelessWidget {
   final VoidCallback onStartWork;
   final VoidCallback onManualControl;
-  final VoidCallback onReports;
   final VoidCallback onOpenTechDashboard;
 
   const HomeScreen({
     super.key,
     required this.onStartWork,
     required this.onManualControl,
-    required this.onReports,
     required this.onOpenTechDashboard,
   });
 
@@ -73,6 +72,7 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            WeatherCard(),
             // HERO / OVERVIEW
             _HeroCard(
               robotId: t?.robotId ?? "agribot-01",
@@ -139,31 +139,26 @@ class HomeScreen extends StatelessWidget {
               title: "Start a Task",
               // subtitle: "Spraying • Inspection • Navigation",
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   CustomButton(text: "Select Task", onPressed: onStartWork),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      CustomButton(
-                        text: "Reports",
-                        icon: Icon(Icons.receipt_long_rounded),
-                        onPressed: onReports,
-                        type: ButtonType.outline,
-                      ),
-                      const SizedBox(width: 16),
-                      CustomButton(
-                        text: "Robot Status",
-                        icon: Icon(Icons.monitor_rounded),
-                        onPressed: () {
-                          // Optionally: open a status page later
-                          ToastHelper.showInfoToast(
-                            "Robot status coming soon!",
-                          );
-                        },
-                        type: ButtonType.outline,
-                      ),
-                    ],
-                  ),
+                  // const SizedBox(height: 12),
+                  // Row(
+                  //   children: [
+                  //     const SizedBox(width: 16),
+                  //     CustomButton(
+                  //       text: "Robot Status",
+                  //       icon: Icon(Icons.monitor_rounded),
+                  //       onPressed: () {
+                  //         // Optionally: open a status page later
+                  //         ToastHelper.showInfoToast(
+                  //           "Robot status coming soon!",
+                  //         );
+                  //       },
+                  //       type: ButtonType.outline,
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

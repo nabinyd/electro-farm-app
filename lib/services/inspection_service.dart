@@ -10,7 +10,7 @@ class InspectionApi {
     String? robotId,
   }) async {
     final res = await _dio.get(
-      "/inspection/runs",
+      "/api/inspection/runs",
       queryParameters: {
         if (fieldId != null) "field_id": fieldId,
         if (robotId != null) "robot_id": robotId,
@@ -27,7 +27,7 @@ class InspectionApi {
 
   Future<RunReport> getReport(String runId) async {
     final res = await _dio.get(
-      "/inspection/report",
+      "/api/inspection/report",
       queryParameters: {"run_id": runId},
     );
     return RunReport.fromJson((res.data as Map).cast<String, dynamic>());
@@ -35,7 +35,7 @@ class InspectionApi {
 
   Future<List<InspectionFrame>> getFrames(String runId) async {
     final res = await _dio.get(
-      "/inspection/frames",
+      "/api/inspection/frames",
       queryParameters: {"run_id": runId, "limit": 200},
     );
     final list = (res.data as List).cast<dynamic>();
