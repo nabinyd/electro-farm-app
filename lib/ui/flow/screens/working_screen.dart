@@ -1,17 +1,21 @@
 import 'dart:async';
-import 'package:electro_farm/providers/telemetry_provider.dart';
-import 'package:electro_farm/ui/flow/app_flow.dart';
-import 'package:electro_farm/ui/widgets/progress_bar.dart';
+import 'package:electro_farm/core/utils/button_types.dart';
+import 'package:electro_farm/core/utils/responsive_padding.dart';
+import 'package:electro_farm/custom_component/constant.dart';
+import 'package:electro_farm/custom_component/custom_appbar.dart';
+import 'package:electro_farm/custom_component/custom_button.dart';
+import 'package:electro_farm/ui/widgets/premium_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:electro_farm/providers/telemetry_provider.dart';
+import 'package:electro_farm/ui/flow/app_flow.dart';
 
 class WorkingScreen extends StatefulWidget {
   final FarmTask task;
   final int totalRows;
-  final int rowDone;
+  final int initialRowDone;
 
-  final VoidCallback onPause;
-  final VoidCallback onResume;
   final VoidCallback onStop;
   final VoidCallback onOpenManual;
   final VoidCallback onCompleted;
@@ -20,9 +24,7 @@ class WorkingScreen extends StatefulWidget {
     super.key,
     required this.task,
     required this.totalRows,
-    required this.rowDone,
-    required this.onPause,
-    required this.onResume,
+    required this.initialRowDone,
     required this.onStop,
     required this.onOpenManual,
     required this.onCompleted,
@@ -40,9 +42,9 @@ class _WorkingScreenState extends State<WorkingScreen> {
   @override
   void initState() {
     super.initState();
-    rowNow = widget.rowDone;
+    rowNow = widget.initialRowDone;
 
-    // Fake progress tick (replace later with mission updates)
+    // Phase-1: still fake row progress, but UI is real
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted || paused) return;
       setState(() {
@@ -63,107 +65,131 @@ class _WorkingScreenState extends State<WorkingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final telemetry = context.watch<TelemetryProvider>().latest;
+    final tp = context.watch<TelemetryProvider>();
+    final t = tp.latest;
     final progress = rowNow / widget.totalRows;
 
+    final speed = t?.speedMps;
+    final imu = t?.imu;
+    final lidar = t?.lidar;
+
+    String speedText() {
+      if (speed == null) return "—";
+      return "${speed.toStringAsFixed(2)} m/s";
+    }
+
+    String accelText() {
+      if (imu == null) return "—";
+      return imu.linAcc.magnitude().toStringAsFixed(2);
+    }
+
+    String frontText() {
+      if (lidar == null) return "—";
+      return "${lidar.minFront?.toStringAsFixed(2) ?? "—"} m";
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(taskLabel(widget.task))),
+      appBar: ElectrofarmAppBar(
+        title: "Working: ${widget.task.name}",
+        showBackButton: false,
+        showLogoutButton: false,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: AppPadding.allMD,
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black12),
-                borderRadius: BorderRadius.circular(16),
+            PremiumCard(
+              title: paused ? "Paused" : "Working",
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.black12),
+                  color: Colors.black.withValues(alpha: .03),
+                ),
+                child: Text(
+                  "Row $rowNow / ${widget.totalRows}",
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  const Icon(Icons.play_circle, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          paused ? "Robot Paused" : "Robot Working",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Row: $rowNow / ${widget.totalRows}",
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          telemetry == null
-                              ? "Speed: —"
-                              : "Speed: ${telemetry.speedMps?.toStringAsFixed(2)} m/s",
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.battery_full),
+                  _kv("Speed", speedText()),
+                  _kv("Accel Mag", accelText()),
+                  _kv("Front Obstacle", frontText()),
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
-            ProgressBar(
-              value: progress,
-              label: "${(progress * 100).toStringAsFixed(0)}%",
+            PremiumCard(
+              title: "Progress",
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LinearProgressIndicator(value: progress, minHeight: 10),
+                  const SizedBox(height: 10),
+                  Text(
+                    "${(progress * 100).toStringAsFixed(0)}% completed",
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
+
+            const Spacer(),
 
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: CustomButton(
+                    text: paused ? "RESUME" : "PAUSE",
                     onPressed: () {
-                      setState(() => paused = !paused);
-                      if (paused) {
-                        widget.onPause();
-                      } else {
-                        widget.onResume();
-                      }
+                      setState(() {
+                        paused = !paused;
+                      });
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Text(paused ? "RESUME" : "PAUSE"),
-                    ),
+                    icon: paused ? Icon(Icons.play_arrow) : Icon(Icons.pause),
+                    type: ButtonType.outline,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton(
+                  child: CustomButton(
+                    text: "STOP",
                     onPressed: widget.onStop,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Text("STOP"),
-                    ),
+                    icon: const Icon(Icons.stop),
+                    type: ButtonType.danger,
+                    isDisabled: false,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: widget.onOpenManual,
-                icon: const Icon(Icons.gamepad),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Text("MANUAL (Emergency)"),
-                ),
-              ),
+
+            CustomButton(
+              text: "MANUAL (Emergency)",
+              onPressed: widget.onOpenManual,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _kv(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(k, style: const TextStyle(color: Colors.black54)),
+          ),
+          Text(v, style: const TextStyle(fontWeight: FontWeight.w900)),
+        ],
       ),
     );
   }

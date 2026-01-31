@@ -1,5 +1,9 @@
+import 'package:electro_farm/core/utils/responsive_padding.dart';
+import 'package:electro_farm/custom_component/constant.dart';
+import 'package:electro_farm/custom_component/custom_appbar.dart';
+import 'package:electro_farm/custom_component/custom_button.dart';
 import 'package:flutter/material.dart';
-import '../app_flow.dart';
+import '../../flow/app_flow.dart';
 
 class ReportScreen extends StatelessWidget {
   final FarmTask task;
@@ -22,15 +26,19 @@ class ReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Report")),
+      appBar: ElectrofarmAppBar(
+        title: "Task Report",
+        showBackButton: false,
+        showLogoutButton: false,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: AppPadding.allMD,
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppPadding.allMD,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black12),
+                border: Border.all(color: AppColors.onBackground),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -41,8 +49,8 @@ class ReportScreen extends StatelessWidget {
                     child: Text(
                       "Work Completed: ${taskLabel(task)}",
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -60,14 +68,9 @@ class ReportScreen extends StatelessWidget {
 
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onNewTask,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Text("START NEW TASK"),
-                ),
-              ),
+              child: CustomButton(text: "START NEW TASK", onPressed: onNewTask),
             ),
+            SizedBox(height: 18),
           ],
         ),
       ),
@@ -87,9 +90,12 @@ class _Stat extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(k, style: const TextStyle(color: Colors.black54)),
+            child: Text(
+              k,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
           ),
-          Text(v, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(v, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

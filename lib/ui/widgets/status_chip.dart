@@ -21,7 +21,7 @@ class StatusChip extends StatelessWidget {
         break;
       case SocketStatus.reconnecting:
         text = "RECONNECTING";
-        bg = Colors.deepOrange;
+        bg = Colors.yellow;
         break;
       case SocketStatus.error:
         text = "ERROR";
