@@ -16,7 +16,8 @@ class _WeatherCardState extends State<WeatherCard> {
 
     // Kathmandu default for now (you can later use GPS)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WeatherProvider>().fetchFromDevice();
+      // TODO: only fetch if not already fetched recently (e.g. within 1 min)
+      // context.read<WeatherProvider>().fetchFromDevice();
     });
   }
 
@@ -54,54 +55,41 @@ class _WeatherCardState extends State<WeatherCard> {
     final w = p.weather;
     if (w == null) return const SizedBox.shrink();
 
-    return _Shell(
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: .2)),
+      ),
       child: Row(
         children: [
-          // icon
           SizedBox(
-            width: 52,
-            height: 52,
+            width: 40,
+            height: 40,
             child: Image.network(
               w.iconUrl,
-              errorBuilder: (_, __, ___) {
-                return const Icon(Icons.cloud, size: 40);
-              },
+              errorBuilder: (_, _, _) => const Icon(Icons.cloud),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${w.name ?? "Unknown"}${w.country != null ? ", ${w.country}" : ""}",
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  w.name ?? "Unknown",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  (w.description ?? w.main ?? "—").toString(),
-                  style: const TextStyle(color: Colors.black54),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 10,
-                  children: [
-                    Text("🌡️ ${w.temp?.toStringAsFixed(1) ?? "--"}°C"),
-                    Text("💧 ${w.humidity ?? "--"}%"),
-                    Text("💨 ${w.windSpeed?.toStringAsFixed(1) ?? "--"} m/s"),
-                  ],
+                  "${w.temp?.toStringAsFixed(1) ?? "--"}°C • ${w.humidity ?? "--"}%",
+                  style: const TextStyle(fontSize: 11),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            tooltip: "Refresh",
-            onPressed: () => context.read<WeatherProvider>().fetchLatLon(
-              lat: 27.7172,
-              lon: 85.3240,
-              force: true,
-            ),
-            icon: const Icon(Icons.refresh),
           ),
         ],
       ),

@@ -1,6 +1,12 @@
-import 'package:electro_farm/app_shell.dart';
+import 'package:electro_farm/custom_component/constant.dart';
+import 'package:electro_farm/providers/arm_joint_provider.dart';
+import 'package:electro_farm/providers/esp_camera_provider.dart';
+import 'package:electro_farm/providers/pi_camera_frame_provider.dart';
+import 'package:electro_farm/providers/control_bridge_provider.dart';
+import 'package:electro_farm/providers/inspection_provider.dart';
+import 'package:electro_farm/providers/vision_processor_provider.dart';
 import 'package:electro_farm/providers/wether_provider.dart';
-import 'package:electro_farm/ui/flow/app_flow.dart';
+import 'package:electro_farm/splash_screen.dart';
 import 'package:electro_farm/ui/inspections/providers/frames_provider.dart';
 import 'package:electro_farm/ui/inspections/providers/inpection_run_provider.dart';
 import 'package:electro_farm/ui/inspections/providers/report_provider.dart';
@@ -25,8 +31,8 @@ class AgriBotApp extends StatelessWidget {
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorSchemeSeed: const Color(0xFF0A264D),
-      scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+      colorSchemeSeed: AppColors.primary,
+      scaffoldBackgroundColor: AppColors.background,
     );
 
     return MultiProvider(
@@ -34,6 +40,22 @@ class AgriBotApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => TelemetryProvider(socketService: socket),
         ),
+        ChangeNotifierProvider(
+          create: (_) => PiCameraFrameProvider(socketService: socket),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => EspCameraProvider(socketService: socket),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VisionProcessorProvider(socketService: socket),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => InspectionProvider(socket: socket),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ArmJointControlProvider(socket: socket),
+        ),
+        ChangeNotifierProvider(create: (_) => ControlProvider(socket)),
         ChangeNotifierProvider(create: (_) => RunsProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(create: (_) => FramesProvider()),
@@ -58,7 +80,7 @@ class AgriBotApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const AppShell(),
+        home: const SplashScreen(),
       ),
     );
   }

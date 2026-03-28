@@ -1,11 +1,12 @@
 import 'package:electro_farm/config/task_specific_config.dart';
 import 'package:electro_farm/core/utils/button_types.dart';
+import 'package:electro_farm/core/utils/responsive_padding.dart';
 import 'package:electro_farm/custom_component/constant.dart';
 import 'package:electro_farm/custom_component/custom_appbar.dart';
 import 'package:electro_farm/custom_component/custom_button.dart';
+import 'package:electro_farm/ui/home_screen/home_screen.dart';
 import 'package:electro_farm/ui/widgets/premium_widget.dart';
 import 'package:flutter/material.dart';
-import '../../flow/app_flow.dart';
 
 class ConfirmTaskScreen extends StatelessWidget {
   final FarmTask task;
@@ -22,8 +23,9 @@ class ConfirmTaskScreen extends StatelessWidget {
     final meta = taskMetaMap[task]!;
     return Scaffold(
       appBar: ElectrofarmAppBar(title: "Confirm Task"),
+
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: AppPadding.allMD,
         child: Column(
           children: [
             PremiumCard(
@@ -61,29 +63,25 @@ class ConfirmTaskScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    text: "Back",
-                    icon: Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(),
-                    type: ButtonType.outline,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: CustomButton(
-                    text: "Start",
-                    icon: Icon(Icons.play_arrow),
-                    onPressed: onStart,
-                    type: ButtonType.primary,
-                    isLoading: false,
-                    isDisabled: false,
-                  ),
-                ),
-              ],
+            SizedBox(height: 24),
+
+            CustomButton(
+              text: "Start",
+              icon: Icon(Icons.play_arrow),
+              onPressed: onStart,
+              type: ButtonType.primary,
+              isLoading: false,
+              isDisabled: false,
+              width: double.infinity,
+            ),
+
+            const SizedBox(height: 10),
+            CustomButton(
+              text: "Back",
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+              type: ButtonType.outline,
+              width: double.infinity,
             ),
           ],
         ),

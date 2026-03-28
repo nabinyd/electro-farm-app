@@ -1,5 +1,11 @@
+import 'package:electro_farm/core/utils/button_sizes.dart';
+import 'package:electro_farm/core/utils/button_types.dart';
 import 'package:electro_farm/custom_component/constant.dart';
+import 'package:electro_farm/custom_component/custom_button.dart';
+import 'package:electro_farm/providers/telemetry_provider.dart';
+import 'package:electro_farm/services/socket_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -28,29 +34,42 @@ class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
     return Size.fromHeight(baseHeight + bottomHeight);
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context) {
-    final List<Widget> actionWidgets = [...?actions];
-
-    if (showLogoutButton) {
-      actionWidgets.add(
-        IconButton(
-          icon: Icon(Icons.logout_rounded, color: AppColors.onPrimary),
-          onPressed: () {},
-          tooltip: 'Logout',
+  List<Widget> _buildAppBarActions(BuildContext context, TelemetryProvider t) {
+    final List<Widget> actionWidgets = [
+      ...?actions,
+      OutlinedButton(
+        onPressed: () {
+          if (t.status == SocketStatus.connected) {
+            t.socketService.disconnect();
+          } else {
+            t.socketService.connect();
+          }
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.onPrimary,
+          side: BorderSide(color: AppColors.onPrimary),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
-      );
-    }
+        child: Text(
+          t.status == SocketStatus.connected ? "Connected" : "Disconnected",
+          style: const TextStyle(color: AppColors.onPrimary),
+        ),
+      ),
+      SizedBox(width: 8),
+    ];
 
     return actionWidgets;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+    final t = context.read<TelemetryProvider>();
     return AppBar(
       automaticallyImplyLeading: showBackButton,
-      backgroundColor: backgroundColor ?? theme.colorScheme.primary,
+      backgroundColor: AppColors.primary,
       foregroundColor: AppColors.onPrimary,
       elevation: 2,
       shadowColor: AppColors.onSurface.withValues(alpha: 0.1),
@@ -58,6 +77,7 @@ class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
       bottom: bottom,
       iconTheme: IconThemeData(color: AppColors.onPrimary),
       actionsIconTheme: IconThemeData(color: AppColors.onPrimary),
+
       leading: showBackButton
           ? IconButton(
               icon: Icon(Icons.arrow_back_rounded, color: AppColors.onPrimary),
@@ -66,11 +86,15 @@ class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
               },
               tooltip: 'Back',
             )
-          : CircleAvatar(
-              child: Image.asset(
-                'assets/images/electrofarm_icon.png',
-                height: 24,
-                width: 24,
+          : Container(
+              margin: const EdgeInsets.only(left: 12.0),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white,
+                child: Image.asset(
+                  'assets/icon/electrofarm-logo.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
       title: title != null
@@ -79,10 +103,11 @@ class ElectrofarmAppBar extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(
                 color: AppColors.onPrimary,
                 fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
             )
           : null,
-      actions: _buildAppBarActions(context),
+      actions: _buildAppBarActions(context, t),
     );
   }
 }

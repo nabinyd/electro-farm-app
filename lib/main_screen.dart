@@ -1,19 +1,21 @@
+import 'package:electro_farm/custom_component/constant.dart';
 import 'package:electro_farm/custom_component/custom_appbar.dart';
 import 'package:electro_farm/providers/telemetry_provider.dart';
+import 'package:electro_farm/ui/home_screen/home_screen.dart';
 import 'package:electro_farm/ui/inspections/providers/inpection_run_provider.dart';
 import 'package:electro_farm/ui/inspections/view/report_screen.dart';
+import 'package:electro_farm/ui/report/report_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:electro_farm/ui/flow/app_flow.dart';
 import 'package:provider/provider.dart';
 
-class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _MainScreenState extends State<MainScreen> {
   int _index = 0;
 
   final _homeNavKey = GlobalKey<NavigatorState>();
@@ -21,63 +23,96 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _index,
         children: [
           Navigator(
             key: _homeNavKey,
             onGenerateRoute: (_) =>
-                MaterialPageRoute(builder: (_) => const AppFlow()),
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
           ),
           Navigator(
             key: _reportsNavKey,
             onGenerateRoute: (_) =>
                 MaterialPageRoute(builder: (_) => const InspectionRunsScreen()),
           ),
+          Navigator(
+            key: GlobalKey<NavigatorState>(),
+            onGenerateRoute: (_) =>
+                MaterialPageRoute(builder: (_) => const ReportTabScreen()),
+          ),
+          Navigator(
+            key: GlobalKey<NavigatorState>(),
+            onGenerateRoute: (_) =>
+                MaterialPageRoute(builder: (_) => const Placeholder()),
+          ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 18,
-              offset: const Offset(0, -6),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: AppColors.primary,
+            // gradient: const LinearGradient(
+            //   colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+            // ),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.green.withOpacity(0.25),
+            //     blurRadius: 20,
+            //     offset: const Offset(0, 8),
+            //   ),
+            // ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              currentIndex: _index,
+              onTap: (i) {
+                if (i == _index) {
+                  final nav = i == 0
+                      ? _homeNavKey.currentState
+                      : _reportsNavKey.currentState;
+                  nav?.popUntil((r) => r.isFirst);
+                } else {
+                  setState(() => _index = i);
+                }
+              },
+              type: BottomNavigationBarType.fixed,
+              showUnselectedLabels: true,
+              selectedItemColor: AppColors.background,
+              unselectedItemColor: Colors.white70,
+              selectedFontSize: 12,
+              unselectedFontSize: 11,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.agriculture_outlined),
+                  activeIcon: Icon(Icons.agriculture),
+                  label: "Home",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.task_outlined),
+                  activeIcon: Icon(Icons.task),
+                  label: "Task",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics_outlined),
+                  activeIcon: Icon(Icons.analytics),
+                  label: "Report",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined),
+                  activeIcon: Icon(Icons.settings),
+                  label: "Settings",
+                ),
+              ],
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _index,
-          onTap: (i) {
-            if (i == _index) {
-              final nav = i == 0
-                  ? _homeNavKey.currentState
-                  : _reportsNavKey.currentState;
-              nav?.popUntil((r) => r.isFirst);
-            } else {
-              setState(() => _index = i);
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          showUnselectedLabels: true,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          selectedItemColor: cs.primary,
-          unselectedItemColor: Colors.grey.shade600,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.agriculture),
-              label: "Home",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.analytics),
-              label: "Reports",
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -124,8 +159,24 @@ class _InspectionRunsScreenState extends State<InspectionRunsScreen> {
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.10),
-                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white,
+                        const Color(0xFFF1F8E9), // light green tint
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: Colors.green.withOpacity(0.15)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
                   child: Icon(icon, color: cs.primary),
                 ),
